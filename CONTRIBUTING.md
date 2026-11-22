@@ -20,6 +20,19 @@ The desktop build needs CGO and GTK and therefore runs in its own builder image
 
 Frontend check (Node): `node --check internal/web/static/app.js`
 
+## Screenshots
+
+The README screenshots in `docs/screenshots/` are generated, not taken by hand:
+
+```bash
+scripts/screenshots/screenshots.sh
+```
+
+The script serves the UI with a mock API (`scripts/screenshots/mock.py`, example data under
+`home.example.org`, listens on `127.0.0.1:8765` only) and captures every page in German/English and
+light/dark with headless Chromium. Requirements: `python3` and `chromium` (or set `CHROMIUM=…`).
+If the API changes, update the example responses in `mock.py` accordingly.
+
 ## Project layout
 
 ```
@@ -34,6 +47,7 @@ internal/httpx/                 hardened HTTP client (https only, no redirects)
 internal/server/                HTTP API, auth, validation
 internal/web/static/            UI (HTML/CSS/JS without build step, i18n)
 docs/screenshots/               README screenshots (light/dark, de/en)
+scripts/screenshots/            generator for the README screenshots
 ```
 
 ## Guidelines
