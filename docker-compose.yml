@@ -3,8 +3,12 @@ name: proxydns
 
 services:
   proxydns:
-    build: .
-    image: proxydns:latest
+    # Fertiges Image aus GitHub Releases. Für ein Update den Tag anheben und
+    # "docker compose pull && docker compose up -d" ausführen.
+    image: ghcr.io/dockercraft-yt/proxydns:0.0.1-alpha
+    # Stattdessen selbst bauen: obere Zeile auskommentieren und diese aktivieren,
+    # dann "docker compose up -d --build":
+    # build: .
     container_name: proxydns
     restart: unless-stopped
     ports:

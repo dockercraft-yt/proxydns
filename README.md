@@ -58,9 +58,13 @@ cp .env.example .env
 # lange Passphrase eintragen, z. B.:  openssl rand -base64 32
 nano .env
 
-docker compose up -d --build
+docker compose up -d      # lädt das Image ghcr.io/dockercraft-yt/proxydns
 docker logs proxydns      # zeigt den Einrichtungscode
 ```
+
+Update auf eine neue Version: Tag in `docker-compose.yml` anheben, dann
+`docker compose pull && docker compose up -d`. Selbst bauen statt Image laden: siehe Kommentar
+bei `image:` in `docker-compose.yml`.
 
 Dann `http://<server>:8080` öffnen, Einrichtungscode + ersten Admin eingeben.
 
