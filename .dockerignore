@@ -4,6 +4,7 @@
 .vscode
 .idea
 dist
+docs
 data
 secrets
 .env
