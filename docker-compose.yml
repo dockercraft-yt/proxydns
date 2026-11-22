@@ -1,0 +1,43 @@
+# Fester Projektname: Volume heißt immer "proxydns_proxydns-data", unabhängig vom Ordnernamen.
+name: proxydns
+
+services:
+  proxydns:
+    build: .
+    image: proxydns:latest
+    container_name: proxydns
+    restart: unless-stopped
+    ports:
+      # Nur im LAN betreiben. Optional an eine LAN-IP binden, z. B. "192.168.1.10:8080:8080"
+      - "8080:8080"
+    environment:
+      # Master-Passphrase (min. 16 Zeichen). Daraus wird per Argon2id der
+      # Schlüssel für alle gespeicherten API-Secrets abgeleitet.
+      # Wert steht in der Datei .env neben dieser Datei (siehe .env.example).
+      PROXYDNS_MASTER_PASSPHRASE: ${PROXYDNS_MASTER_PASSPHRASE:?PROXYDNS_MASTER_PASSPHRASE in .env setzen}
+
+      # Sicherer (nicht per "docker inspect" sichtbar): Docker-Secret statt Variable.
+      # Dann die Zeile oben entfernen und die secrets-Blöcke unten aktivieren.
+      # PROXYDNS_MASTER_PASSPHRASE_FILE: /run/secrets/proxydns_master_passphrase
+
+      # Wenn die App selbst hinter einem HTTPS-Reverse-Proxy (z. B. NPM) läuft:
+      # PROXYDNS_SECURE_COOKIES: "true"
+      # PROXYDNS_TRUST_PROXY: "true"
+    # secrets:
+    #   - proxydns_master_passphrase
+    volumes:
+      - proxydns-data:/data
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+
+# secrets:
+#   proxydns_master_passphrase:
+#     file: ./secrets/master_passphrase.txt
+
+volumes:
+  proxydns-data:

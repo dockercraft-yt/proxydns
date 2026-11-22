@@ -1,0 +1,13 @@
+.git
+.github
+.claude
+.vscode
+.idea
+dist
+data
+secrets
+.env
+*.db
+*.db-wal
+*.db-shm
+*.log

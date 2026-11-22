@@ -1,0 +1,26 @@
+# Build output
+/dist/
+
+# Secrets – never commit
+.env
+/secrets/
+master.key
+kdf.salt
+
+# Local data / databases
+/data/
+*.db
+*.db-wal
+*.db-shm
+*.log
+
+# Claude Code: personal settings (project-wide .claude/settings.json may be committed)
+.claude/settings.local.json
+
+# Editors / OS
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store
+Thumbs.db

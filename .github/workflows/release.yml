@@ -1,0 +1,196 @@
+# Release pipeline.
+#
+# Trigger: push a tag "v<VERSION>", e.g.
+#   echo 0.0.2-alpha > VERSION && git commit -am "Release 0.0.2-alpha"
+#   git tag v0.0.2-alpha && git push origin main v0.0.2-alpha
+#
+# The tag must match the VERSION file exactly, otherwise the run fails.
+# Versions with a suffix (-alpha, -beta, -rc.1 …) are published as pre-release
+# and do NOT move the Docker tag "latest".
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    name: Check version
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+      prerelease: ${{ steps.v.outputs.prerelease }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: v
+        name: Tag must match VERSION file
+        run: |
+          VERSION="$(tr -d '[:space:]' < VERSION)"
+          if ! printf '%s' "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$'; then
+            echo "::error file=VERSION::'$VERSION' is not a valid version (x.y.z or x.y.z-suffix)"
+            exit 1
+          fi
+          if [ "v$VERSION" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match VERSION file (v$VERSION)"
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          case "$VERSION" in
+            *-*) echo "prerelease=true" >> "$GITHUB_OUTPUT" ;;
+            *)   echo "prerelease=false" >> "$GITHUB_OUTPUT" ;;
+          esac
+
+  test:
+    name: Test
+    needs: prepare
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - run: go vet ./...
+      - run: go test -count=1 ./...
+
+  binaries:
+    name: Build binaries
+    needs: [prepare, test]
+    runs-on: ubuntu-24.04
+    env:
+      VERSION: ${{ needs.prepare.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Install WebKitGTK (Linux desktop build)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libgtk-3-dev libwebkit2gtk-4.1-dev
+
+      - name: Build
+        run: |
+          set -eu
+          LDFLAGS="-s -w -X proxydns/internal/app.Version=$VERSION"
+          mkdir -p dist
+
+          # Server / headless (pure Go)
+          CGO_ENABLED=0 GOOS=linux   GOARCH=amd64 go build -trimpath -ldflags "$LDFLAGS" \
+            -o "dist/proxydns-$VERSION-linux-amd64" ./cmd/proxydns
+          CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -trimpath -ldflags "$LDFLAGS" \
+            -o "dist/proxydns-$VERSION-windows-amd64.exe" ./cmd/proxydns
+
+          # Desktop window (Wails): Linux needs CGO + WebKitGTK, Windows cross-compiles without CGO
+          CGO_ENABLED=1 go build -tags desktop,production,webkit2_41 -trimpath -ldflags "$LDFLAGS" \
+            -o "dist/proxydns-desktop-$VERSION-linux-amd64" ./cmd/proxydns-desktop
+          CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -tags desktop,production -trimpath -ldflags "$LDFLAGS -H windowsgui" \
+            -o "dist/proxydns-desktop-$VERSION-windows-amd64.exe" ./cmd/proxydns-desktop
+
+          cd dist && sha256sum * > SHA256SUMS && cat SHA256SUMS
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: binaries
+          path: dist/
+          if-no-files-found: error
+          retention-days: 7
+
+  docker:
+    name: Docker image (ghcr.io)
+    needs: [prepare, test]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+    env:
+      VERSION: ${{ needs.prepare.outputs.version }}
+      PRERELEASE: ${{ needs.prepare.outputs.prerelease }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: img
+        name: Image name and tags
+        run: |
+          IMAGE="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/proxydns"
+          TAGS="$IMAGE:$VERSION"
+          if [ "$PRERELEASE" = "false" ]; then TAGS="$TAGS,$IMAGE:latest"; fi
+          echo "image=$IMAGE" >> "$GITHUB_OUTPUT"
+          echo "tags=$TAGS" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          platforms: linux/amd64
+          build-args: VERSION=${{ env.VERSION }}
+          tags: ${{ steps.img.outputs.tags }}
+          labels: |
+            org.opencontainers.image.title=ProxyDNS Manager
+            org.opencontainers.image.version=${{ env.VERSION }}
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+
+  release:
+    name: GitHub release
+    needs: [prepare, binaries, docker]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    env:
+      VERSION: ${{ needs.prepare.outputs.version }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: binaries
+          path: dist
+
+      - name: Release notes
+        run: |
+          OWNER="${GITHUB_REPOSITORY_OWNER,,}"
+          {
+            if [ "${{ needs.prepare.outputs.prerelease }}" = "true" ]; then
+              echo "> [!WARNING]"
+              echo "> **Pre-release ($VERSION).** Nicht für den produktiven Einsatz gedacht – Funktionen und Datenformat können sich noch ändern."
+              echo
+            fi
+            echo "### Docker"
+            echo '```bash'
+            echo "docker pull ghcr.io/$OWNER/proxydns:$VERSION"
+            echo '```'
+            echo
+            echo "### Dateien"
+            echo "| Datei | Zweck |"
+            echo "|---|---|"
+            echo "| \`proxydns-desktop-$VERSION-windows-amd64.exe\` | Desktop-App Windows (WebView2) |"
+            echo "| \`proxydns-desktop-$VERSION-linux-amd64\` | Desktop-App Linux (WebKitGTK 4.1) |"
+            echo "| \`proxydns-$VERSION-linux-amd64\` | Server ohne Fenster (Linux) |"
+            echo "| \`proxydns-$VERSION-windows-amd64.exe\` | Server ohne Fenster (Windows) |"
+            echo "| \`SHA256SUMS\` | Prüfsummen |"
+          } > notes.md
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          name: ProxyDNS Manager ${{ env.VERSION }}
+          tag_name: ${{ github.ref_name }}
+          prerelease: ${{ needs.prepare.outputs.prerelease == 'true' }}
+          body_path: notes.md
+          generate_release_notes: true
+          files: dist/*
+          fail_on_unmatched_files: true
