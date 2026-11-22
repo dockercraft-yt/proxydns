@@ -140,13 +140,14 @@ Bauen in die Programme übernommen (sichtbar unter *Mein Konto*).
 ```bash
 echo 0.0.2-alpha > VERSION
 git commit -am "Release 0.0.2-alpha"
-git tag v0.0.2-alpha
-git push origin main v0.0.2-alpha
+git push
 ```
 
-Der Workflow prüft, dass Tag und `VERSION` übereinstimmen, führt die Tests aus, baut alle
-Programme samt `SHA256SUMS`, veröffentlicht das Docker-Image unter
-`ghcr.io/<github-benutzer>/proxydns:<version>` und erstellt das GitHub-Release.
+Sobald sich `VERSION` auf `main` ändert, führt der Workflow die Tests aus, baut alle Programme
+samt `SHA256SUMS`, veröffentlicht das Docker-Image unter `ghcr.io/<github-benutzer>/proxydns:<version>`,
+setzt das Tag `v<version>` und erstellt das GitHub-Release. Gibt es das Tag schon, wird nichts
+veröffentlicht. Ein fehlgeschlagenes Release lässt sich unter *Actions → Release → Run workflow*
+erneut starten.
 Versionen mit Zusatz (`-alpha`, `-beta`, `-rc.1` …) werden als **Pre-release** markiert und setzen
 das Docker-Tag `latest` nicht. Bei jedem Push/Pull-Request laufen zusätzlich die Tests
 ([`ci.yml`](.github/workflows/ci.yml)).

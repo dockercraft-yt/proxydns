@@ -81,7 +81,7 @@ internal/web      embedded frontend (vanilla JS, no build step)
 ## Release
 
 1. Set the new version in `VERSION` (e.g. `0.0.2-alpha`).
-2. Commit, then tag `v<VERSION>` and push the tag → `.github/workflows/release.yml` checks that tag
-   and `VERSION` match, runs tests, builds all binaries + `SHA256SUMS`, pushes
-   `ghcr.io/<owner>/proxydns:<version>` and creates the GitHub release.
+2. Commit and push to `main` → `.github/workflows/release.yml` runs because `VERSION` changed. If tag
+   `v<VERSION>` does not exist yet, it runs tests, builds all binaries + `SHA256SUMS`, pushes
+   `ghcr.io/<owner>/proxydns:<version>`, then creates the tag and the GitHub release. Never tag by hand.
 3. Versions with a suffix (`-alpha`, `-beta`, …) become a **pre-release** and do not update `latest`.
