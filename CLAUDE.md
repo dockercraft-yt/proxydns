@@ -85,3 +85,11 @@ internal/web      embedded frontend (vanilla JS, no build step)
    `v<VERSION>` does not exist yet, it runs tests, builds all binaries + `SHA256SUMS`, pushes
    `ghcr.io/<owner>/proxydns:<version>`, then creates the tag and the GitHub release. Never tag by hand.
 3. Versions with a suffix (`-alpha`, `-beta`, …) become a **pre-release** and do not update `latest`.
+
+## Open ToDos
+
+- [ ] Translate the comments in `docker-compose.yml` and `.env.example` into English (or make them bilingual).
+- [ ] Add security scanners to CI: `gosec`, `govulncheck`, and Trivy for the Docker image.
+- [ ] Support AdGuard Home as an alternative to Pi-hole.
+- [ ] Support NPMplus as an alternative to Nginx Proxy Manager.
+- [ ] Support Zoraxy as an alternative to Nginx Proxy Manager.
