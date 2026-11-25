@@ -1,0 +1,78 @@
+name: Feature request
+description: Suggest a new feature or an improvement.
+title: "[Feature]: "
+labels: ["enhancement", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for your idea! You can write in English or German.
+
+        Please note: ProxyDNS follows a strict security model. Requests that would weaken it
+        (e.g. plain `http://` backends, an "insecure skip verify" option, returning stored secrets
+        to the browser) will not be accepted.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / use case
+      description: What are you trying to do, and what is missing or cumbersome today?
+      placeholder: I always have to … because …
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: How should it work? UI sketches or example API calls are welcome.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Other solutions or workarounds you have thought about.
+
+  - type: dropdown
+    id: mode
+    attributes:
+      label: Relevant for
+      multiple: true
+      options:
+        - Server (Docker / binary)
+        - Desktop app
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      multiple: true
+      options:
+        - Pi-hole (DNS records)
+        - Nginx Proxy Manager (proxy hosts, certificates, access lists)
+        - Login / users / 2FA (TOTP)
+        - OIDC
+        - Settings
+        - Audit log
+        - UI / translations
+        - Installation / update / Docker
+        - Other
+
+  - type: textarea
+    id: security
+    attributes:
+      label: Security considerations
+      description: Does the feature touch authentication, permissions, secrets or the connection to the backends? If so, how?
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist
+      options:
+        - label: I searched the existing issues and this feature has not been requested yet.
+          required: true
+        - label: I would be willing to submit a pull request for this feature.

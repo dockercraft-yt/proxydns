@@ -1,0 +1,117 @@
+name: Bug report
+description: Something does not work as expected.
+title: "[Bug]: "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug! You can write in English or German.
+
+        > [!CAUTION]
+        > **Do not post secrets.** Remove passwords, app passwords, API tokens, OIDC client secrets,
+        > TOTP seeds, setup codes and session cookies from logs and screenshots before submitting.
+        > Security vulnerabilities must **not** be reported here – see the "Security vulnerability"
+        > link on the previous page.
+
+  - type: input
+    id: version
+    attributes:
+      label: ProxyDNS version
+      description: Shown under *My account* (or the image tag / release you downloaded).
+      placeholder: e.g. 0.0.1-alpha
+    validations:
+      required: true
+
+  - type: dropdown
+    id: mode
+    attributes:
+      label: Mode
+      options:
+        - Server (Docker)
+        - Server (binary)
+        - Desktop app – Windows
+        - Desktop app – Linux
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Affected area
+      multiple: true
+      options:
+        - Pi-hole (DNS records)
+        - Nginx Proxy Manager (proxy hosts, certificates, access lists)
+        - Login / users / 2FA (TOTP)
+        - OIDC
+        - Settings / connection to backends
+        - Audit log
+        - UI / translations
+        - Installation / update / Docker
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: backends
+    attributes:
+      label: Backend versions
+      description: Pi-hole version (v6.x) and Nginx Proxy Manager version, if relevant.
+      placeholder: e.g. Pi-hole Core v6.1, Web v6.2, FTL v6.2 / NPM 2.12.3
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: A clear description of the bug, including any error message or error code shown in the UI.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Go to …
+        2. Enter domain … and target …
+        3. Click …
+        4. See error …
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: |
+        Relevant log output, e.g. `docker logs proxydns`. Will be formatted as code automatically.
+        **Check for secrets before pasting.**
+      render: text
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, browser, reverse proxy in front of ProxyDNS, custom CA, anything else that might matter.
+      placeholder: |
+        - OS: Debian 12 / Windows 11
+        - Browser: Firefox 140
+        - Behind reverse proxy: yes/no
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist
+      options:
+        - label: I searched the existing issues and this bug has not been reported yet.
+          required: true
+        - label: I removed all secrets (passwords, tokens, cookies, setup codes) from this report.
+          required: true
